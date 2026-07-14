@@ -1,0 +1,97 @@
+name: "MWAHAHA exp09 subtask A (v9, EN, agentic iterative, sample12, claude45)"
+
+training_data:
+  dataset: "tsv:../data/jokes/joke_summaries.tsv"
+  input_feature: "joke"
+  label_feature: "mechanism"
+  split_name: "train"
+  textual_labels: []
+
+validation_data:
+  dataset: "tsv:../experiments/mwahaha_exp09_subtaskA/data/task-a-en-trial-sample12.tsv"
+  input_feature: "headline"
+  split_name: "train"
+
+results:
+  output_cache_id: "id"
+  output_field: "text"
+  output_cached: true
+  output_filename: "../experiments/mwahaha_exp09_subtaskA/outputs/sample/task-a-en-v9-agentic-claude45-sample12"
+
+embed:
+  k: 12
+  training_size_limit: 200
+
+rerank:
+  k: 4
+
+llm:
+  model: "openai/anthropic.claude-sonnet-4-5-20250929-v1:0"
+  parallel_tool_calls: false
+  temperature: 1
+  examples: |
+    - Joke: {{ examples[0].text }}
+      Summary: {{ examples[0].data.summary }}
+      Mechanism: {{ examples[0].label }}
+      Topic: {{ examples[0].data.topic }}
+      Source: {{ examples[0].data.source }}
+    - Joke: {{ examples[1].text }}
+      Summary: {{ examples[1].data.summary }}
+      Mechanism: {{ examples[1].label }}
+      Topic: {{ examples[1].data.topic }}
+      Source: {{ examples[1].data.source }}
+    - Joke: {{ examples[2].text }}
+      Summary: {{ examples[2].data.summary }}
+      Mechanism: {{ examples[2].label }}
+      Topic: {{ examples[2].data.topic }}
+      Source: {{ examples[2].data.source }}
+    - Joke: {{ examples[3].text }}
+      Summary: {{ examples[3].data.summary }}
+      Mechanism: {{ examples[3].label }}
+      Topic: {{ examples[3].data.topic }}
+      Source: {{ examples[3].data.source }}
+  sprompt: |
+    You are orchestrating an exp08-style four-stage humor pipeline where each stage must run as its own subagent tool call.
+
+    Hard constraints for final output:
+    - Plain text joke only.
+    - 1-3 sentences.
+    - No semicolons.
+    - If headline is present, reference it and reuse at least one exact headline token.
+    - If word1/word2 are present (not "-"), include both exactly and put them in the same clause.
+    - Safe, non-offensive content.
+
+    Required workflow (do not skip and do not reorder):
+    1. Call PlannerSubagent with: headline, word1, word2, inspiration.
+    2. Call WriterSubagent with: headline, word1, word2, planner_note, inspiration.
+    3. Call ReflectorSubagent with: headline, word1, word2, planner_note, candidates.
+    4. Call JudgeSubagent with: headline, word1, word2, candidates, rewrites.
+    5. Call ConstraintAudit on the judged candidate.
+    6. If audit fails, call JudgeSubagent again with audit_feedback and re-audit.
+    7. End by calling ReturnResult with the passing final joke.
+
+    Tool-call policy:
+    - Use subagent outputs as inputs to later stages.
+    - Never return final assistant text directly; finish via ReturnResult.
+  uprompt: |
+    Input:
+    - headline: {{ data.headline }}
+    - word1: {{ data.word1 }}
+    - word2: {{ data.word2 }}
+
+    Inspiration examples (mechanisms/angles only, do not copy wording/entities):
+    {{ examples }}
+
+    Execute the required subagent workflow and produce the final joke through tools.
+
+preprocessor: null
+
+iterative:
+  enabled: true
+  max_iterations: 24
+  tools:
+    - name: "mwahaha_tools.PlannerSubagent"
+    - name: "mwahaha_tools.WriterSubagent"
+    - name: "mwahaha_tools.ReflectorSubagent"
+    - name: "mwahaha_tools.JudgeSubagent"
+    - name: "mwahaha_tools.ConstraintAudit"

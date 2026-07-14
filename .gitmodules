@@ -1,0 +1,3 @@
+[submodule "ragthoven"]
+	path = ragthoven
+	url = https://github.com/ragthoven-dev/ragthoven.git

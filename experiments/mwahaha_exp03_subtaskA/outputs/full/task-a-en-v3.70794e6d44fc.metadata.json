@@ -1,0 +1,63 @@
+{
+    "name": "MWAHAHA exp03 subtask A (v3, EN)",
+    "training_data": null,
+    "validation_data": {
+        "input_feature": "headline",
+        "split_name": "train",
+        "dataset": "csv:/var/folders/d2/1mdfzcrd1616fy5ht4kwgj6r0000gn/T/mwahaha_exp03_en_jux7v_80/task-a-en-v3-full.csv",
+        "dataset_version": null
+    },
+    "results": {
+        "output_cached": null,
+        "output_cache_id": "id",
+        "output_field": "text",
+        "bad_request_default_value": null,
+        "batch_size": 100,
+        "output_filename": "/Users/mrshu/work/ragoon-dev/MWAHAHA-SemEval-2026/experiments/mwahaha_exp03_subtaskA/outputs/full/task-a-en-v3"
+    },
+    "embed": null,
+    "rerank": null,
+    "llm": {
+        "log_first": false,
+        "sprompt": null,
+        "uprompt": null,
+        "prompts": [
+            {
+                "name": "system",
+                "role": "system",
+                "prompt": "You are participating in a multi-step humor generation pipeline for SemEval MWAHAHA Subtask A (v3).\n\nInputs (treat as constraints):\n- headline: {{ data.headline }}\n- word1: {{ data.word1 }}\n- word2: {{ data.word2 }}\n\nGlobal safety rules (always apply):\n- No hate, slurs, harassment, stereotypes, violent or demeaning content, or mocking victims.\n- Avoid targeting people or groups; prefer self-deprecation or harmless objects/systems.\n\nFinal joke rules (only for the final selected joke text):\n- Plain text only; no labels, no JSON, no lists, no numbering, no quotes around the whole joke, no \"Joke:\" or \"As an AI\".\n- 1-2 sentences preferred (max 3).\n- Must clearly reference the headline and reuse at least 1\u20132 exact headline tokens.\n- If word1/word2 are not \"-\", include both words exactly as provided (literal substring match).\n- Write in the same language as the headline.\n- Length caps: EN/ES <= 900 chars; ZH <= 300 chars.\n\nIf an earlier step asks you to plan or draft, you may use structure, but the final selected joke must follow the rules above.\n",
+                "out": null,
+                "tools": null
+            },
+            {
+                "name": "planner",
+                "role": "user",
+                "prompt": "You are the planner/ideator. Create a safe, funny plan for a single joke.\n\nInputs:\n- headline: {{ data.headline }}\n- word1: {{ data.word1 }}\n- word2: {{ data.word2 }}\n\nMechanism library (choose 4-6 by name):\n- INCONGRUITY_TWIST: setup leads to expected interpretation; punchline reinterprets.\n- RULE_OF_THREE: two normal items, third breaks pattern.\n- EXAGGERATION_HYPERBOLE: take a trait/situation to absurd extreme.\n- UNDERSTATEMENT: downplay something huge for contrast.\n- ANALOGY_COMPARISON: \"X is like Y, except...\" for a sharp angle.\n- ROLE_REVERSAL: flip power/roles (object judges human).\n- EXPECTATION_VS_REALITY: \"People say X, but actually Y.\"\n- LITERALIZE_IDIOM: treat figurative phrase literally.\n- WRONG_GENRE_FRAME_SHIFT: treat mundane topic as another genre.\n- ESCALATION_LADDER: each clause escalates absurdity.\n- AMBIGUITY_GARDEN_PATH: early wording supports two parses; punch forces the surprising one.\n- FAKE_DEFINITION: define a common thing in a twisted way.\n- FAKE_ADVICE_LIFEHACK: \"helpful tip\" that's absurd or too honest.\n- RELATABLE_WHEN_YOU: meme-like relatable observation.\n- SARCASM_IRONIC_PRAISE: praise that clearly means the opposite.\n- CALLBACK_MICRO: reuse an earlier word/idea as a twist.\n\nResearch guidance (soft, can be ignored if another mechanism is funnier):\n- Benign violation: include a small, safe twist; avoid cruelty.\n- Psychological distance: for serious headlines, reframe to low-stakes, systems, or objects.\n- Avoid weak puns unless double meaning is obvious.\n- Text-only constraint: avoid jokes that require timing or phonetics.\n- Word inclusion: if word1/word2 are not \"-\", plan a natural slot for both (exact tokens).\n- Headline anchor: plan to reuse 1\u20132 exact headline tokens.\n\nSerious-headline heuristic:\n- If headline involves death/violence/disaster/crime, target bureaucracy, systems, or objects (not victims or individuals).\n\nOutput format:\nPERSONA: <short persona or voice>\nANCHOR TOKENS: <1-2 exact tokens from headline to reuse>\nPREMISES:\n- <4-6 mini-premises>\nMECHANISMS:\n- <4-6 mechanism names from the library>\nSAFETY NOTE: <one-line reminder about the safe target>\n",
+                "out": null,
+                "tools": null
+            },
+            {
+                "name": "writer",
+                "role": "user",
+                "prompt": "You are the writer/guard. Draft candidates and self-check constraints.\n\nInputs:\n- headline: {{ data.headline }}\n- word1: {{ data.word1 }}\n- word2: {{ data.word2 }}\n- planner output:\n{{ planner.out }}\n\nRequirements:\n- Generate 4-6 candidate jokes in the same language as the headline.\n- Prefer 1 sentence; allow 2 if needed.\n- Must clearly reference the headline and reuse planned anchor tokens.\n- If word1/word2 are not \"-\", include both words exactly as provided (literal substring match).\n- Non-offensive; avoid targeting people/groups.\n- Text-only; avoid jokes relying on timing/phonetics.\n- Length caps: EN/ES <= 900 chars; ZH <= 300 chars.\n- Force a twist in the final clause (last clause reframes the setup).\n- Mechanism guidance is optional; use it when it helps, ignore when it doesn't.\n\nFormat:\nC1: <joke>\nCHECK1: <ok or revise: ... if constraints failed>\nC2: <joke>\nCHECK2: <ok or revise: ...>\nC3: <joke>\nCHECK3: <ok or revise: ...>\nC4: <joke>\nCHECK4: <ok or revise: ...>\n(Provide C5/C6 if you have more; revise once if needed.)\n",
+                "out": null,
+                "tools": null
+            },
+            {
+                "name": "judge",
+                "role": "user",
+                "prompt": "You are the judge/polisher. Pick the funniest valid candidate and output only the final joke text.\n\nInputs:\n- headline: {{ data.headline }}\n- word1: {{ data.word1 }}\n- word2: {{ data.word2 }}\n- candidates:\n{{ writer.out }}\n\nSelection criteria:\n- Must satisfy all final joke rules (non-offensive, headline referenced, anchor tokens reused, exact word constraints).\n- Length caps: EN/ES <= 900 chars; ZH <= 300 chars.\n- Prefer a clear twist in the final clause (reframes the setup).\n- Reject clich\u00e9s / template openers like: \"Nothing says\", \"I love how\", \"Turns out\", \"People say\", \"As an\", \"In today\u2019s\", \"If you ever\".\n- Prefer distinctive, surprising choices over safe or generic lines.\n- Light polish allowed; preserve required words and headline anchor tokens.\n\nOutput:\n- Return ONLY the final joke text (no labels, no quotes, no analysis).\n",
+                "out": null,
+                "tools": null
+            }
+        ],
+        "tools": null,
+        "examples": null,
+        "model": "gpt-5-2025-08-07",
+        "base_url": "https://api.openai.com/v1",
+        "messages": true,
+        "temperature": 1
+    },
+    "preprocessor": null,
+    "iterative": null
+}

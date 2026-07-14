@@ -1,0 +1,111 @@
+name: "MWAHAHA exp10 subtask A (v10, EN, agentic autonomous branching, sample12, claude-opus45)"
+
+training_data:
+  dataset: "tsv:../data/jokes/joke_summaries.tsv"
+  input_feature: "joke"
+  label_feature: "mechanism"
+  split_name: "train"
+  textual_labels: []
+
+validation_data:
+  dataset: "tsv:../experiments/mwahaha_exp10_subtaskA/data/task-a-en-trial-sample12.tsv"
+  input_feature: "headline"
+  split_name: "train"
+
+results:
+  output_cache_id: "id"
+  output_field: "text"
+  output_cached: true
+  output_filename: "../experiments/mwahaha_exp10_subtaskA/outputs/sample/task-a-en-v10-agentic-autonomous-claude-opus45-sample12"
+
+embed:
+  k: 12
+  training_size_limit: 200
+
+rerank:
+  k: 4
+
+llm:
+  model: "openai/anthropic.claude-opus-4-5"
+  parallel_tool_calls: true
+  temperature: 1
+  examples: |
+    - Joke: {{ examples[0].text }}
+      Summary: {{ examples[0].data.summary }}
+      Mechanism: {{ examples[0].label }}
+      Topic: {{ examples[0].data.topic }}
+      Source: {{ examples[0].data.source }}
+    - Joke: {{ examples[1].text }}
+      Summary: {{ examples[1].data.summary }}
+      Mechanism: {{ examples[1].label }}
+      Topic: {{ examples[1].data.topic }}
+      Source: {{ examples[1].data.source }}
+    - Joke: {{ examples[2].text }}
+      Summary: {{ examples[2].data.summary }}
+      Mechanism: {{ examples[2].label }}
+      Topic: {{ examples[2].data.topic }}
+      Source: {{ examples[2].data.source }}
+    - Joke: {{ examples[3].text }}
+      Summary: {{ examples[3].data.summary }}
+      Mechanism: {{ examples[3].label }}
+      Topic: {{ examples[3].data.topic }}
+      Source: {{ examples[3].data.source }}
+  sprompt: |
+    You are an autonomous orchestrator running an exp08-style humor toolchain.
+
+    Hard constraints for final output:
+    - Plain text joke only.
+    - 1-3 sentences.
+    - No semicolons.
+    - If headline is present, reference it and reuse at least one exact headline token.
+    - If word1/word2 are present (not "-"), include both exactly and put them in the same clause.
+    - Safe, non-offensive content.
+
+    Agentic objective:
+    - Choose your own path instead of following one fixed sequence.
+    - Explore multiple independent branches before deciding.
+    - Use tool outputs as evidence, then converge to one audited final joke.
+
+    Exploration policy:
+    1. Create 2-4 independent branches (B1, B2, ...), each with a different humor mechanism.
+    2. For each branch, call PlannerSubagent and WriterSubagent. Reuse inspiration but do not duplicate branch angles.
+    3. For weak branches, optionally call ReflectorSubagent and re-run WriterSubagent or JudgeSubagent.
+    4. Build a cross-branch shortlist (3-6 candidates total).
+    5. Call JudgeSubagent to select/polish one finalist from the shortlist.
+    6. Run ConstraintAudit on finalists independently. Audit at least 2 variants when iteration budget allows.
+    7. If audits fail, decide whether to:
+       - patch with JudgeSubagent using audit_feedback,
+       - run ReflectorSubagent and re-judge,
+       - or open a new branch with PlannerSubagent + WriterSubagent.
+    8. Stop only when ConstraintAudit returns ok=true, then call ReturnResult.
+
+    Tool-call policy:
+    - Dynamic ordering is allowed; no fixed order is required.
+    - Parallel tool calls are allowed when useful.
+    - Never return final assistant text directly; finish via ReturnResult.
+
+    Anti-stall budget:
+    - If no branch improves after two consecutive repair cycles, force a fresh branch.
+    - Keep enough iterations to run final JudgeSubagent + ConstraintAudit before returning.
+  uprompt: |
+    Input:
+    - headline: {{ data.headline }}
+    - word1: {{ data.word1 }}
+    - word2: {{ data.word2 }}
+
+    Inspiration examples (mechanisms/angles only, do not copy wording/entities):
+    {{ examples }}
+
+    Choose your own branch plan, explore independent paths, and converge through audit to one final joke via tools.
+
+preprocessor: null
+
+iterative:
+  enabled: true
+  max_iterations: 36
+  tools:
+    - name: "mwahaha_tools.PlannerSubagent"
+    - name: "mwahaha_tools.WriterSubagent"
+    - name: "mwahaha_tools.ReflectorSubagent"
+    - name: "mwahaha_tools.JudgeSubagent"
+    - name: "mwahaha_tools.ConstraintAudit"

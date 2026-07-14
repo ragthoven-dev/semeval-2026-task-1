@@ -1,0 +1,73 @@
+{
+    "name": "MWAHAHA exp10 subtask A (v10, EN, agentic exp08-port, sample12, gpt5)",
+    "training_data": {
+        "dataset": "tsv:../data/jokes/joke_summaries.tsv",
+        "input_feature": "joke",
+        "split_name": "train",
+        "textual_labels": [],
+        "dataset_version": null,
+        "label_feature": "mechanism",
+        "output_feature": "mechanism"
+    },
+    "validation_data": {
+        "input_feature": "headline",
+        "split_name": "train",
+        "dataset": "tsv:../experiments/mwahaha_exp10_subtaskA/data/task-a-en-trial-sample12.tsv",
+        "dataset_version": null
+    },
+    "results": {
+        "output_cached": true,
+        "output_cache_id": "id",
+        "output_field": "text",
+        "bad_request_default_value": null,
+        "batch_size": 100,
+        "output_filename": "../experiments/mwahaha_exp10_subtaskA/outputs/sample/task-a-en-v10-agentic-exp08port-gpt5-sample12"
+    },
+    "embed": {
+        "k": 12,
+        "training_size_limit": 200,
+        "model": "sentence-transformers/all-MiniLM-L6-v2",
+        "embedder": "sbert",
+        "docs_embedding_count": 10,
+        "device": "cpu"
+    },
+    "rerank": {
+        "k": 4,
+        "model": "ms-marco-MiniLM-L-12-v2"
+    },
+    "llm": {
+        "log_first": false,
+        "sprompt": "You are orchestrating an exp08-style four-stage humor pipeline where each stage must run as its own subagent tool call.\n\nHard constraints for final output:\n- Plain text joke only.\n- 1-3 sentences.\n- No semicolons.\n- If headline is present, reference it and reuse at least one exact headline token.\n- If word1/word2 are present (not \"-\"), include both exactly and put them in the same clause.\n- Safe, non-offensive content.\n\nRequired workflow (do not skip and do not reorder):\n1. Call PlannerSubagent with: headline, word1, word2, inspiration.\n2. Call WriterSubagent with: headline, word1, word2, planner_note, inspiration.\n3. Call ReflectorSubagent with: headline, word1, word2, planner_note, candidates.\n4. Call JudgeSubagent with: headline, word1, word2, candidates, rewrites.\n5. Call ConstraintAudit on the judged candidate.\n6. If audit fails, call JudgeSubagent again with audit_feedback and re-audit.\n7. End by calling ReturnResult with the passing final joke.\n\nTool-call policy:\n- Use subagent outputs as inputs to later stages.\n- Never return final assistant text directly; finish via ReturnResult.\n",
+        "uprompt": "Input:\n- headline: {{ data.headline }}\n- word1: {{ data.word1 }}\n- word2: {{ data.word2 }}\n\nInspiration examples (mechanisms/angles only, do not copy wording/entities):\n{{ examples }}\n\nExecute the required subagent workflow and produce the final joke through tools.\n",
+        "prompts": null,
+        "tools": null,
+        "examples": "- Joke: {{ examples[0].text }}\n  Summary: {{ examples[0].data.summary }}\n  Mechanism: {{ examples[0].label }}\n  Topic: {{ examples[0].data.topic }}\n  Source: {{ examples[0].data.source }}\n- Joke: {{ examples[1].text }}\n  Summary: {{ examples[1].data.summary }}\n  Mechanism: {{ examples[1].label }}\n  Topic: {{ examples[1].data.topic }}\n  Source: {{ examples[1].data.source }}\n- Joke: {{ examples[2].text }}\n  Summary: {{ examples[2].data.summary }}\n  Mechanism: {{ examples[2].label }}\n  Topic: {{ examples[2].data.topic }}\n  Source: {{ examples[2].data.source }}\n- Joke: {{ examples[3].text }}\n  Summary: {{ examples[3].data.summary }}\n  Mechanism: {{ examples[3].label }}\n  Topic: {{ examples[3].data.topic }}\n  Source: {{ examples[3].data.source }}\n",
+        "model": "openai/gpt-5-2025-08-07",
+        "base_url": "https://api.openai.com/v1",
+        "parallel_tool_calls": false,
+        "messages": false,
+        "temperature": 1
+    },
+    "preprocessor": null,
+    "iterative": {
+        "enabled": true,
+        "max_iterations": 24,
+        "tools": [
+            {
+                "name": "mwahaha_tools.PlannerSubagent"
+            },
+            {
+                "name": "mwahaha_tools.WriterSubagent"
+            },
+            {
+                "name": "mwahaha_tools.ReflectorSubagent"
+            },
+            {
+                "name": "mwahaha_tools.JudgeSubagent"
+            },
+            {
+                "name": "mwahaha_tools.ConstraintAudit"
+            }
+        ]
+    }
+}

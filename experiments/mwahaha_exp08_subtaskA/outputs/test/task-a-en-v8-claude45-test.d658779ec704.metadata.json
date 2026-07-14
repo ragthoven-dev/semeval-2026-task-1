@@ -1,0 +1,88 @@
+{
+    "name": "MWAHAHA exp08 subtask A (v8, EN, joke summaries RAG, test, claude45)",
+    "training_data": {
+        "dataset": "tsv:../data/jokes/joke_summaries.tsv",
+        "input_feature": "joke",
+        "split_name": "train",
+        "textual_labels": [],
+        "dataset_version": null,
+        "label_feature": "mechanism",
+        "output_feature": "mechanism"
+    },
+    "validation_data": {
+        "input_feature": "headline",
+        "split_name": "train",
+        "dataset": "tsv:../data/test/task-a-en.tsv",
+        "dataset_version": null
+    },
+    "results": {
+        "output_cached": true,
+        "output_cache_id": "id",
+        "output_field": "text",
+        "bad_request_default_value": null,
+        "batch_size": 100,
+        "output_filename": "../experiments/mwahaha_exp08_subtaskA/outputs/test/task-a-en-v8-claude45-test"
+    },
+    "embed": {
+        "k": 12,
+        "training_size_limit": 200,
+        "model": "sentence-transformers/all-MiniLM-L6-v2",
+        "embedder": "sbert",
+        "docs_embedding_count": 10,
+        "device": "cpu"
+    },
+    "rerank": {
+        "k": 4,
+        "model": "ms-marco-MiniLM-L-12-v2"
+    },
+    "llm": {
+        "log_first": false,
+        "sprompt": null,
+        "uprompt": null,
+        "prompts": [
+            {
+                "name": "system",
+                "role": "system",
+                "prompt": "You are participating in a multi-step humor generation pipeline for SemEval MWAHAHA Subtask A (v8).\n\nInputs (treat as constraints):\n{% if data.headline != \"-\" %}\n- headline: {{ data.headline }}\n{% endif %}\n{% if data.word1 != \"-\" %}\n- word1: {{ data.word1 }}\n{% endif %}\n{% if data.word2 != \"-\" %}\n- word2: {{ data.word2 }}\n{% endif %}\n- If the headline is ALL CAPS, interpret it as normal headline case; do not mimic shouting.\n\nGlobal safety rules (always apply):\n- No hate, slurs, harassment, stereotypes, violent or demeaning content, or mocking victims.\n- Avoid targeting people or groups; prefer self-deprecation or harmless objects/systems.\n\nFinal joke rules (only for the final selected joke text):\n- Plain text only; no labels, no JSON, no lists, no numbering, no quotes around the whole joke, no \"Joke:\" or \"As an AI\".\n- 1-3 sentences allowed; prefer 2-3 if it improves naturalness.\n- Do not use semicolons (\";\"). Use sentence breaks instead.\n{% if data.headline != \"-\" %}\n- Must clearly reference the headline and reuse at least 1-2 exact headline tokens.\n- Do NOT copy the headline verbatim; avoid long contiguous phrases from it (keep to short fragments).\n{% else %}\n- Headline is missing; do NOT reference it.\n- Include both word1 and word2 exactly as provided (literal substring match).\n- word1 and word2 must appear in the same clause and interact (causal or physical link).\n{% endif %}\n{% if data.headline != \"-\" and data.word1 != \"-\" and data.word2 != \"-\" %}\n- Include both word1 and word2 exactly as provided (literal substring match).\n- Prefer placing them in the same clause with a direct interaction.\n{% endif %}\n- If any of word1/word2 are \"-\", do NOT output the \"-\" character.\n- Write in the same language as the headline (if present).\n- Length can vary; prefer natural flow and stronger humor over strict brevity.\n- Hard caps: EN/ES <= 900 chars; ZH <= 300 chars.\n- Punchline pivot: the final clause must contain the twist that reframes the setup.\n\nIf an earlier step asks you to plan or draft, you may use structure, but the final selected joke must follow the rules above.\n",
+                "out": null,
+                "tools": null
+            },
+            {
+                "name": "planner",
+                "role": "user",
+                "prompt": "You are the planner/ideator. Create a safe, funny plan for a single joke using metacognitive planning.\n\nInputs:\n{% if data.headline != \"-\" %}\n- headline: {{ data.headline }}\n{% endif %}\n{% if data.word1 != \"-\" %}\n- word1: {{ data.word1 }}\n{% endif %}\n{% if data.word2 != \"-\" %}\n- word2: {{ data.word2 }}\n{% endif %}\n\nInspiration jokes and summaries (for mechanisms and angles only; do NOT copy wording or reuse specific entities):\n{{ examples }}\n\nMetacognitive planning:\n- Identify likely pitfalls (headline copying, weak twist, too literal, unsafe target, missing word interaction).\n- Pick a primary strategy and a backup strategy.\n- Choose a TRICK_TYPE (metaphor, literalization, personification, role reversal, genre shift, misdirection, etc.).\n- Set checkpoints to verify later.\n\nMechanism library (choose 6-10 by name; examples are for guidance):\n- INCONGRUITY_TWIST: Setup leads to expected interpretation; punchline forces a surprising but coherent reinterpretation.\n  Ex1: \"I started meditating. Now I'm calmly watching my life fall apart.\"\n  Ex2: \"I bought a planner to get organized. It's been very organized about ignoring me.\"\n- RULE_OF_THREE: List two normal items; third breaks the pattern.\n  Ex1: \"My hobbies are running, cooking, and staring at my inbox like it owes me money.\"\n  Ex2: \"I trust my family, my friends, and absolutely no one with my browser history.\"\n- EXAGGERATION_HYPERBOLE: Take a trait/situation to absurd extreme.\n  Ex1: \"That meeting was so long my coffee filed for retirement.\"\n  Ex2: \"My to-do list is so big it asked for a separate apartment.\"\n- UNDERSTATEMENT: Downplay something obviously huge; contrast creates humor.\n  Ex1: \"I made a small mistake at work. The building is no longer accessible.\"\n  Ex2: \"My diet went slightly off-track. I'm on first-name basis with the delivery app.\"\n- ANALOGY_COMPARISON: \"X is like Y, except...\" to reveal a sharp angle.\n  Ex1: \"My budget is like a horror movie: it starts calm and ends with screaming.\"\n  Ex2: \"Dating apps are like job interviews, except the benefits are feelings.\"\n- ROLE_REVERSAL: Flip power/roles (object judges human; subordinate is in charge).\n  Ex1: \"I tried to train my dog. He trained me to open snacks faster.\"\n  Ex2: \"My phone doesn't need me - I'm the one who panics when it leaves.\"\n- EXPECTATION_VS_REALITY: \"People say X, but actually Y.\"\n  Ex1: \"They said 'work-life balance.' So I balance work on top of my life.\"\n  Ex2: \"I thought adulthood meant freedom. Turns out it means receipts.\"\n- LITERALIZE_IDIOM: Treat figurative phrase literally.\n  Ex1: \"I tried to 'follow my dreams.' I woke up and they ran away again.\"\n  Ex2: \"They told me to 'cut expenses,' so I sliced my credit card. Very therapeutic.\"\n- WRONG_GENRE_FRAME_SHIFT: Treat mundane topic as another genre (horror, romance, heist, sci-fi).\n  Ex1: \"My inbox is a horror movie: every time I open it, the monster gets stronger.\"\n  Ex2: \"Budgeting feels like a heist movie, except I'm stealing from my own future.\"\n- ESCALATION_LADDER: Each clause escalates the absurdity.\n  Ex1: \"I checked my email, then my bank app, then WebMD. By 9AM I was broke and terminal.\"\n  Ex2: \"I took one 'quick nap.' I woke up, the season changed, and I had new responsibilities.\"\n- AMBIGUITY_GARDEN_PATH: Early wording supports two parses; punch forces the surprising one.\n  Ex1: \"I love long walks... mostly to the fridge at 2AM.\"\n  Ex2: \"My therapist said I need space. So I deleted all my apps. Same thing.\"\n- FAKE_DEFINITION: Define a common thing in a twisted way.\n  Ex1: \"Monday (n.): the trial version of the week.\"\n  Ex2: \"Confidence (n.): forgetting you can be perceived.\"\n- FAKE_ADVICE_LIFEHACK: \"Helpful tip\" that's absurd or too honest.\n  Ex1: \"Life hack: if you don't check your bank account, you're always financially stable.\"\n  Ex2: \"Productivity tip: schedule a breakdown - then you'll stop having surprise ones.\"\n- RELATABLE_WHEN_YOU: Meme-like relatable observation.\n  Ex1: \"When you open the fridge like it's going to apologize and restock itself.\"\n  Ex2: \"When you say 'I'll do it tomorrow' and tomorrow shows up immediately.\"\n- SARCASM_IRONIC_PRAISE: Praise in a way that clearly means the opposite.\n  Ex1: \"Love how my phone autocorrects correctly spelled words. So supportive.\"\n  Ex2: \"Nothing says 'teamwork' like 12 people booking the same meeting to avoid work.\"\n- CALLBACK_MICRO: Reuse an earlier word/idea within the same short joke as a twist.\n  Ex1: \"I joined a 'silent retreat.' It worked - I've been silently judging everyone since.\"\n  Ex2: \"I bought a self-help book. It's been helping... the shelf.\"\n\nOutput format:\nPITFALLS: <2-3 likely traps>\nSTRATEGY: <primary strategy + backup>\nTRICK_TYPE: <one label>\nCHECKPOINTS: <2-3 checks>\nSCRIPT_A: <expected frame>\nSCRIPT_B: <opposed frame>\nVIOLATION: <what is broken>\nBENIGNING: <why it is safe/funny>\nPIVOT: <twist anchor for final clause>\nSETUP_GIST: <one-line setup>\nPUNCHLINE_GIST: <one-line twist>\nANCHOR_TOKENS: <1-2 exact headline tokens or \"none\">\nWORDPAIR_LINK: <how word1/word2 interact or \"n/a\">\nPREMISES:\n- <6-8 distinct angles>\nMECHANISMS:\n- <6-10 mechanism names>\nSAFETY_NOTE: <safe target reminder>\n",
+                "out": null,
+                "tools": null
+            },
+            {
+                "name": "writer",
+                "role": "user",
+                "prompt": "You are the writer/guard. Draft candidates and self-check constraints.\n\nInputs:\n{% if data.headline != \"-\" %}\n- headline: {{ data.headline }}\n{% endif %}\n{% if data.word1 != \"-\" %}\n- word1: {{ data.word1 }}\n{% endif %}\n{% if data.word2 != \"-\" %}\n- word2: {{ data.word2 }}\n{% endif %}\n- planner output:\n{{ planner.out }}\n\nRequirements:\n- Generate 12 candidate jokes in the same language as the headline.\n- Prefer 2-3 sentences when it improves naturalness; avoid semicolons.\n- Length can vary; prefer funnier and clearer over shorter.\n- Do not copy phrasing or specific details from the inspiration jokes/summaries; use only abstract patterns.\n{% if data.headline != \"-\" %}\n- Clearly reference the headline and reuse planned anchor tokens.\n- Do NOT copy the headline verbatim; avoid long contiguous phrases from it.\n{% else %}\n- Headline is missing; do NOT reference it.\n- Include both word1 and word2 exactly as provided (literal substring match).\n- word1 and word2 must appear in the same clause and interact (causal or physical link).\n{% endif %}\n{% if data.headline != \"-\" and data.word1 != \"-\" and data.word2 != \"-\" %}\n- Include both word1 and word2 exactly as provided (literal substring match).\n- Prefer placing them in the same clause with a direct interaction.\n{% endif %}\n- If any of word1/word2 are \"-\", do NOT output the \"-\" character.\n- If the headline is ALL CAPS, do not mirror shouting; write in normal headline case.\n- Non-offensive; avoid targeting people/groups.\n- Text-only; avoid jokes relying on timing/phonetics.\n- Punchline pivot: final clause must contain the twist (reframes the setup).\n- Use the TRICK_TYPE from the planner unless you explicitly revise it in CHECK.\n- Ensure diversity: each candidate should use a different angle; avoid repeating templates/openers.\n\nFormat:\nC1: <joke>\nCHECK1: <ok or revise: ... if constraints failed>\nC2: <joke>\nCHECK2: <ok or revise: ...>\nC3: <joke>\nCHECK3: <ok or revise: ...>\nC4: <joke>\nCHECK4: <ok or revise: ...>\nC5: <joke>\nCHECK5: <ok or revise: ...>\nC6: <joke>\nCHECK6: <ok or revise: ...>\nC7: <joke>\nCHECK7: <ok or revise: ...>\nC8: <joke>\nCHECK8: <ok or revise: ...>\nC9: <joke>\nCHECK9: <ok or revise: ...>\nC10: <joke>\nCHECK10: <ok or revise: ...>\nC11: <joke>\nCHECK11: <ok or revise: ...>\nC12: <joke>\nCHECK12: <ok or revise: ...>\n",
+                "out": null,
+                "tools": null
+            },
+            {
+                "name": "reflector",
+                "role": "user",
+                "prompt": "You are the reflector. Diagnose failures and rewrite the best candidates.\n\nInputs:\n{% if data.headline != \"-\" %}\n- headline: {{ data.headline }}\n{% endif %}\n{% if data.word1 != \"-\" %}\n- word1: {{ data.word1 }}\n{% endif %}\n{% if data.word2 != \"-\" %}\n- word2: {{ data.word2 }}\n{% endif %}\n- planner output:\n{{ planner.out }}\n- candidates:\n{{ writer.out }}\n\nRules:\n- Diagnose issues: literal, weak twist, headline copy, missing word interaction, unsafe target, semicolons.\n- Produce 1-2 improved candidates that fix the issues.\n- Preserve required tokens and constraints.\n- No semicolons. 1-3 sentences allowed.\n\nFormat:\nDIAGNOSE:\n- <short bullet list of failures found>\nR1: <rewrite>\nR2: <optional rewrite>\n",
+                "out": null,
+                "tools": null
+            },
+            {
+                "name": "judge",
+                "role": "user",
+                "prompt": "You are the judge/polisher. Pick the funniest valid candidate and output only the final joke text.\n\nInputs:\n{% if data.headline != \"-\" %}\n- headline: {{ data.headline }}\n{% endif %}\n{% if data.word1 != \"-\" %}\n- word1: {{ data.word1 }}\n{% endif %}\n{% if data.word2 != \"-\" %}\n- word2: {{ data.word2 }}\n{% endif %}\n- candidates:\n{{ writer.out }}\n- reflector rewrites:\n{{ reflector.out }}\n\nSelection criteria:\n- Must satisfy all final joke rules (non-offensive, headline referenced when present, anchor tokens reused, exact word constraints).\n{% if data.headline == \"-\" %}\n- Reject any output that references the headline or omits word1/word2.\n- Reject if word1/word2 do not interact in the same clause.\n{% else %}\n- Reject outputs that are near-copies of the headline (large verbatim overlaps or long quoted fragments).\n{% endif %}\n{% if data.word1 == \"-\" or data.word2 == \"-\" %}\n- The output must not contain the \"-\" character.\n{% endif %}\n- Reject any candidate containing semicolons (\";\").\n- Prefer natural flow and strong humor over strict brevity.\n- Punchline pivot: final clause clearly reframes the setup.\n- Reject cliches / template openers like: \"Nothing says\", \"I love how\", \"Turns out\", \"People say\", \"As an\", \"In today's\", \"If you ever\".\n- Prefer distinctive, surprising choices over safe or generic lines.\n- Prefer reflector rewrites if they are valid and improve twist clarity.\n- Light polish allowed; preserve required words and headline anchor tokens.\n\nDecision rubric (internal only):\n- Score each candidate 1-5 on:\n  (a) surprise (incongruity strength)\n  (b) resolution (clear reinterpretation)\n  (c) benignness (safe target)\n  (d) specificity (headline or word-pair relevance)\n  (e) punchiness (brevity + clean landing)\n- Choose the highest total; break ties by clarity and brevity.\n\nOutput:\n- Return ONLY the final joke text (no labels, no quotes, no analysis).\n",
+                "out": null,
+                "tools": null
+            }
+        ],
+        "tools": null,
+        "examples": "- Joke: {{ examples[0].text }}\n  Summary: {{ examples[0].data.summary }}\n  Mechanism: {{ examples[0].label }}\n  Topic: {{ examples[0].data.topic }}\n  Source: {{ examples[0].data.source }}\n- Joke: {{ examples[1].text }}\n  Summary: {{ examples[1].data.summary }}\n  Mechanism: {{ examples[1].label }}\n  Topic: {{ examples[1].data.topic }}\n  Source: {{ examples[1].data.source }}\n- Joke: {{ examples[2].text }}\n  Summary: {{ examples[2].data.summary }}\n  Mechanism: {{ examples[2].label }}\n  Topic: {{ examples[2].data.topic }}\n  Source: {{ examples[2].data.source }}\n- Joke: {{ examples[3].text }}\n  Summary: {{ examples[3].data.summary }}\n  Mechanism: {{ examples[3].label }}\n  Topic: {{ examples[3].data.topic }}\n  Source: {{ examples[3].data.source }}\n",
+        "model": "openai/anthropic.claude-sonnet-4-5-20250929-v1:0",
+        "base_url": "https://api.openai.com/v1",
+        "messages": true,
+        "temperature": 1
+    },
+    "preprocessor": null,
+    "iterative": null
+}

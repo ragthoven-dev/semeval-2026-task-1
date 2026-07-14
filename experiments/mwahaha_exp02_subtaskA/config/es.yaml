@@ -1,0 +1,142 @@
+name: "MWAHAHA exp02 subtask A (v2, ES)"
+
+validation_data:
+  dataset: "csv:./data/trial/task-a-es.tsv"
+  input_feature: "headline"
+  split_name: "train"
+
+results:
+  output_cache_id: "id"
+  output_field: "text"
+  output_filename: "task-a-es-v2"
+
+llm:
+  model: "gpt-4.1"
+  temperature: 0.7
+  messages: true
+  prompts:
+    - name: "system"
+      role: "system"
+      prompt: |
+        You are participating in a multi-step humor generation pipeline for SemEval MWAHAHA Subtask A (v2).
+        
+        Inputs (treat as constraints):
+        - headline: {{ data.headline }}
+        - word1: {{ data.word1 }}
+        - word2: {{ data.word2 }}
+        
+        Global safety rules (always apply):
+        - No hate, slurs, harassment, stereotypes, violent or demeaning content, or mocking victims.
+        - Avoid targeting people or groups; prefer self-deprecation or harmless objects/systems.
+        
+        Final joke rules (only for the final selected joke text):
+        - Plain text only; no labels, no JSON, no lists, no numbering, no quotes around the whole joke, no "Joke:" or "As an AI".
+        - 1-2 sentences preferred (max 3).
+        - Must clearly reference the headline and reuse at least 1–2 exact headline tokens.
+        - If word1/word2 are not "-", include both words exactly as provided (literal substring match).
+        - Write in the same language as the headline.
+        - Length caps: EN/ES <= 900 chars; ZH <= 300 chars.
+        
+        If an earlier step asks you to plan or draft, you may use structure, but the final selected joke must follow the rules above.
+    - name: "planner"
+      role: "user"
+      prompt: |
+        You are the planner/ideator. Create a safe, funny plan for a single joke.
+        
+        Inputs:
+        - headline: {{ data.headline }}
+        - word1: {{ data.word1 }}
+        - word2: {{ data.word2 }}
+        
+        Mechanism library (choose 4-6 by name):
+        - INCONGRUITY_TWIST: setup leads to expected interpretation; punchline reinterprets.
+        - RULE_OF_THREE: two normal items, third breaks pattern.
+        - EXAGGERATION_HYPERBOLE: take a trait/situation to absurd extreme.
+        - UNDERSTATEMENT: downplay something huge for contrast.
+        - ANALOGY_COMPARISON: "X is like Y, except..." for a sharp angle.
+        - ROLE_REVERSAL: flip power/roles (object judges human).
+        - EXPECTATION_VS_REALITY: "People say X, but actually Y."
+        - LITERALIZE_IDIOM: treat figurative phrase literally.
+        - WRONG_GENRE_FRAME_SHIFT: treat mundane topic as another genre.
+        - ESCALATION_LADDER: each clause escalates absurdity.
+        - AMBIGUITY_GARDEN_PATH: early wording supports two parses; punch forces the surprising one.
+        - FAKE_DEFINITION: define a common thing in a twisted way.
+        - FAKE_ADVICE_LIFEHACK: "helpful tip" that's absurd or too honest.
+        - RELATABLE_WHEN_YOU: meme-like relatable observation.
+        - SARCASM_IRONIC_PRAISE: praise that clearly means the opposite.
+        - CALLBACK_MICRO: reuse an earlier word/idea as a twist.
+        
+        Research guidance (soft, can be ignored if another mechanism is funnier):
+        - Benign violation: include a small, safe twist; avoid cruelty.
+        - Psychological distance: for serious headlines, reframe to low-stakes, systems, or objects.
+        - Avoid weak puns unless double meaning is obvious.
+        - Text-only constraint: avoid jokes that require timing or phonetics.
+        - Word inclusion: if word1/word2 are not "-", plan a natural slot for both (exact tokens).
+        - Headline anchor: plan to reuse 1–2 exact headline tokens.
+        
+        Serious-headline heuristic:
+        - If headline involves death/violence/disaster/crime, target bureaucracy, systems, or objects (not victims or individuals).
+        
+        Output format:
+        PERSONA: <short persona or voice>
+        ANCHOR TOKENS: <1-2 exact tokens from headline to reuse>
+        PREMISES:
+        - <4-6 mini-premises>
+        MECHANISMS:
+        - <4-6 mechanism names from the library>
+        SAFETY NOTE: <one-line reminder about the safe target>
+    - name: "writer"
+      role: "user"
+      prompt: |
+        You are the writer/guard. Draft candidates and self-check constraints.
+        
+        Inputs:
+        - headline: {{ data.headline }}
+        - word1: {{ data.word1 }}
+        - word2: {{ data.word2 }}
+        - planner output:
+        {{ planner.out }}
+        
+        Requirements:
+        - Generate 4-6 candidate jokes in the same language as the headline.
+        - Prefer 1 sentence; allow 2 if needed.
+        - Must clearly reference the headline and reuse planned anchor tokens.
+        - If word1/word2 are not "-", include both words exactly as provided (literal substring match).
+        - Non-offensive; avoid targeting people/groups.
+        - Text-only; avoid jokes relying on timing/phonetics.
+        - Length caps: EN/ES <= 900 chars; ZH <= 300 chars.
+        - Force a twist in the final clause (last clause reframes the setup).
+        - Mechanism guidance is optional; use it when it helps, ignore when it doesn't.
+        
+        Format:
+        C1: <joke>
+        CHECK1: <ok or revise: ... if constraints failed>
+        C2: <joke>
+        CHECK2: <ok or revise: ...>
+        C3: <joke>
+        CHECK3: <ok or revise: ...>
+        C4: <joke>
+        CHECK4: <ok or revise: ...>
+        (Provide C5/C6 if you have more; revise once if needed.)
+    - name: "judge"
+      role: "user"
+      prompt: |
+        You are the judge/polisher. Pick the funniest valid candidate and output only the final joke text.
+        
+        Inputs:
+        - headline: {{ data.headline }}
+        - word1: {{ data.word1 }}
+        - word2: {{ data.word2 }}
+        - candidates:
+        {{ writer.out }}
+        
+        Selection criteria:
+        - Must satisfy all final joke rules (non-offensive, headline referenced, anchor tokens reused, exact word constraints).
+        - Length caps: EN/ES <= 900 chars; ZH <= 300 chars.
+        - Prefer a clear twist in the final clause (reframes the setup).
+        - Reject clichés / template openers like: "Nothing says", "I love how", "Turns out", "People say", "As an", "In today’s", "If you ever".
+        - Prefer distinctive, surprising choices over safe or generic lines.
+        - Light polish allowed; preserve required words and headline anchor tokens.
+        
+        Output:
+        - Return ONLY the final joke text (no labels, no quotes, no analysis).
