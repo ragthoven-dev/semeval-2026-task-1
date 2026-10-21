@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title description">
+  <title id="title">MWAHAHA, the RAGthoven headline humor showcase</title>
+  <desc id="description">Explore headline jokes, humor mechanisms, source examples, and a prompt builder.</desc>
+  <rect width="1200" height="630" fill="#f7f4ee"/>
+  <rect x="0" y="0" width="1200" height="16" fill="#81334b"/>
+  <rect x="64" y="61" width="58" height="58" rx="15" fill="#20323f"/>
+  <text x="75" y="102" fill="#f7f4ee" font-family="Georgia,serif" font-size="43">m.</text>
+  <text x="145" y="88" fill="#20323f" font-family="Arial,sans-serif" font-size="22" letter-spacing="4">MWAHAHA</text>
+  <text x="146" y="114" fill="#686a70" font-family="Arial,sans-serif" font-size="13" letter-spacing="2">RAGTHOVEN AT SEMEVAL 2026</text>
+  <text x="64" y="265" fill="#272a2e" font-family="Georgia,serif" font-size="102" letter-spacing="-4">A little news.</text>
+  <text x="64" y="378" fill="#81334b" font-family="Georgia,serif" font-size="102" font-style="italic" letter-spacing="-4">A different ending.</text>
+  <path d="M64 439H1136" stroke="#ddd9d1" stroke-width="2"/>
+  <text x="64" y="496" fill="#20323f" font-family="Arial,sans-serif" font-size="25">Headline jokes. Humor mechanisms. Your own prompts.</text>
+  <text x="64" y="563" fill="#686a70" font-family="Arial,sans-serif" font-size="19">ragthoven-dev.github.io/semeval-2026-task-1</text>
+</svg>

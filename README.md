@@ -5,6 +5,12 @@ Code, prompts, and configurations for **RAGthoven**, our system for
 **Subtask A** — multilingual constrained humor generation in English, Spanish,
 and Chinese.
 
+**[Explore the interactive website](https://ragthoven-dev.github.io/semeval-2026-task-1/)**
+to browse generated headline jokes, search the retrieval corpus, explore humor
+mechanisms, inspect recorded RAG examples, and prepare prompts for your own
+headlines. The site runs in your browser without model credentials; live joke
+generation uses your chosen model separately.
+
 RAGthoven decomposes humor generation into a multi-stage LLM pipeline —
 **Planner → Best-of-N Writer → Reflector → Judge** — grounded in computational
 humor theory (Benign Violation Theory, Script-based Semantic Theory of Humor).
@@ -34,6 +40,7 @@ data/
   README.md                  how to obtain the official trial/test data
 mwahaha_submission/          our official Subtask A leaderboard submission (EN/ES/ZH)
 viewer/                      Streamlit tool to compare outputs side by side
+site/                        public showcase, libraries, and headline prompt builder
 ragthoven/                   RAGthoven framework (git submodule)
 ```
 
@@ -122,6 +129,10 @@ non-agentic pipeline despite substantially higher tool-call budgets. See the
 paper for full leaderboards and analysis.
 
 ## Viewer
+
+The [public website](https://ragthoven-dev.github.io/semeval-2026-task-1/)
+includes the curated showcase and libraries. See [`site/README.md`](site/README.md)
+for local preview, data updates, and GitHub Pages deployment.
 
 ```bash
 uv run streamlit run viewer/app.py

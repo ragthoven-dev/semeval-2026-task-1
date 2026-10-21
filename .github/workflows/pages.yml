@@ -1,0 +1,72 @@
+name: Website
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'site/**'
+      - 'scripts/build_site_data.py'
+      - 'scripts/check_site.py'
+      - 'tests/prompt-builder.test.mjs'
+      - 'tests/test_site_data.py'
+      - 'data/jokes/joke_summaries.tsv'
+      - 'experiments/mwahaha_exp05_subtaskA/mechanisms.yaml'
+      - '.github/workflows/pages.yml'
+  pull_request:
+    paths:
+      - 'site/**'
+      - 'scripts/build_site_data.py'
+      - 'scripts/check_site.py'
+      - 'tests/prompt-builder.test.mjs'
+      - 'tests/test_site_data.py'
+      - 'data/jokes/joke_summaries.tsv'
+      - 'experiments/mwahaha_exp05_subtaskA/mechanisms.yaml'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Build public data and downloads
+        run: python3 scripts/build_site_data.py
+      - name: Check content, downloads, and public assets
+        run: python3 scripts/check_site.py
+      - name: Test public data validation
+        run: python3 -m unittest discover -s tests -p 'test_*.py'
+      - name: Check browser module syntax
+        run: |
+          node --check --input-type=module < site/app.js
+          node --check --input-type=module < site/prompt-builder.js
+      - name: Test headline parsing and prompt exports
+        run: node --test tests/prompt-builder.test.mjs
+      - name: Upload website
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+
+  deploy:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+      - name: Deploy website
+        id: deployment
+        uses: actions/deploy-pages@v4
